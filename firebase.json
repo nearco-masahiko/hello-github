@@ -1,0 +1,11 @@
+{
+  "hosting": {
+    "site": "nearco-hp-2025",
+    "public": "company-hp",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ]
+  }
+}
