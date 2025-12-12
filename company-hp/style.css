@@ -28,7 +28,7 @@ header {
     width: 100%;
     top: 0;
     z-index: 1000;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 nav {
@@ -65,13 +65,55 @@ nav {
 }
 
 /* Hero Section */
+/* Hero Section */
 .hero {
     height: 80vh;
     display: flex;
     align-items: center;
-    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
     position: relative;
     overflow: hidden;
+    color: white;
+    /* Default text color in hero to white */
+}
+
+.hero-slides {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+}
+
+.hero-slide {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    opacity: 0;
+    transition: opacity 1.5s ease-in-out;
+    transform: scale(1.05);
+    /* Slight zoom effect start */
+    animation: zoomEffect 10s infinite alternate;
+    /* Optional subtle movement */
+}
+
+.hero-slide.active {
+    opacity: 1;
+}
+
+.hero-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(15, 23, 42, 0.6);
+    /* Dark overlay using primary color hue */
+    z-index: 1;
 }
 
 .hero-content {
@@ -79,21 +121,26 @@ nav {
     margin: 0 auto;
     padding: 0 2rem;
     z-index: 2;
+    /* Ensure content is above overlay */
+    position: relative;
 }
 
 .hero h1 {
     font-size: 3.5rem;
     font-weight: 800;
-    color: var(--primary-color);
+    color: white;
     margin-bottom: 1.5rem;
     line-height: 1.2;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .hero p {
     font-size: 1.25rem;
-    color: #475569;
+    color: #e2e8f0;
+    /* Light gray for readability */
     max-width: 600px;
     margin-bottom: 2rem;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .btn {
@@ -172,7 +219,7 @@ section {
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
 }
 
-.profile-table th, 
+.profile-table th,
 .profile-table td {
     padding: 1.5rem;
     border-bottom: 1px solid var(--border-color);
@@ -224,7 +271,7 @@ footer {
     .hero h1 {
         font-size: 2.5rem;
     }
-    
+
     .nav-links {
         display: none;
     }
