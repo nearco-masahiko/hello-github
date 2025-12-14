@@ -276,3 +276,13 @@ footer {
         display: none;
     }
 }
+
+/* Flying Cat Animation */
+.flying-cat {
+    position: fixed;
+    z-index: 9999;
+    pointer-events: none; /* Let clicks pass through */
+    width: 150px; /* Adjust size as needed */
+    height: auto;
+    will-change: transform;
+}
