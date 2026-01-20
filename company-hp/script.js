@@ -44,7 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Flying Cat Animation
     function spawnFlyingCat() {
         const cat = document.createElement('img');
-        cat.src = 'images/1765693275377.jpg';
+        cat.src = 'images/flying-cat.jpg';
         cat.classList.add('flying-cat');
         cat.alt = 'Flying Cat';
 
