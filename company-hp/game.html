@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>ミニゲーム | 合同会社Nearco</title>
+<meta name="description" content="合同会社Nearcoのミニゲーム「スイッチ！」- おやゆびゲームで遊ぼう！">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&family=Noto+Sans+JP:wght@400;500;700&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+/* ===== サイト共通ヘッダー/フッター ===== */
+:root {
+  --primary-color: #0f172a;
+  --accent-color: #3b82f6;
+  --text-color: #334155;
+  --bg-color: #ffffff;
+  --border-color: #e2e8f0;
+}
+
+body {
+  margin: 0; padding: 0;
+  font-family: 'Inter', 'Noto Sans JP', sans-serif;
+  background: #0f0f1a;
+  color: #eee;
+}
+
+/* ヘッダー */
+.site-header {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  width: 100%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+.site-header nav {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.site-header .logo {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  letter-spacing: -0.5px;
+  text-decoration: none;
+}
+.site-header .nav-links {
+  display: flex;
+  gap: 2rem;
+  list-style: none;
+  margin: 0; padding: 0;
+}
+.site-header .nav-links a {
+  text-decoration: none;
+  color: var(--text-color);
+  font-weight: 500;
+  transition: color 0.3s;
+}
+.site-header .nav-links a:hover {
+  color: var(--accent-color);
+}
+
+/* フッター */
+.site-footer {
+  background-color: var(--primary-color);
+  color: white;
+  padding: 2rem;
+  text-align: center;
+  font-family: 'Inter', 'Noto Sans JP', sans-serif;
+}
+.site-footer a {
+  color: #94a3b8;
+  text-decoration: none;
+  margin: 0 1rem;
+}
+.site-footer a:hover { color: white; }
+
+@media (max-width: 768px) {
+  .site-header .nav-links { display: none; }
+}
+
+/* ===== ゲーム本体 ===== */
+.game-container {
+  font-family: 'Nunito', sans-serif;
+  min-height: calc(100vh - 140px);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  overflow-y: auto;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.game-container * { box-sizing: border-box; }
+
+.screen { display:none; flex-direction:column; align-items:center; justify-content:flex-start; width:100%; min-height:80vh; padding:10px 16px 20px; }
+.screen.active { display:flex; }
+
+/* ===== タイトル ===== */
+.game-logo { font-size:72px; font-weight:900; background:linear-gradient(135deg,#f5a623,#e94560); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; animation:float 3s ease-in-out infinite; }
+@keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+.logo-sub { color:rgba(255,255,255,0.4); font-size:14px; letter-spacing:3px; margin-bottom:50px; }
+
+.level-btns { display:flex; flex-direction:column; gap:14px; width:100%; max-width:300px; }
+.lbtn {
+  padding:18px 24px; border-radius:18px; border:none; cursor:pointer;
+  font-family:inherit; font-size:20px; font-weight:800;
+  display:flex; align-items:center; gap:12px;
+  transition:transform 0.15s;
+}
+.lbtn:active { transform:scale(0.96); }
+.lbtn-easy { background:linear-gradient(135deg,#22c55e,#16a34a); color:#fff; box-shadow:0 6px 24px rgba(34,197,94,0.35); }
+.lbtn-mid  { background:linear-gradient(135deg,#f59e0b,#d97706); color:#fff; box-shadow:0 6px 24px rgba(245,158,11,0.35); }
+.lbtn-hard { background:linear-gradient(135deg,#ef4444,#dc2626); color:#fff; box-shadow:0 6px 24px rgba(239,68,68,0.35); }
+.lbtn-icon { font-size:28px; }
+.lbtn-text { text-align:left; }
+.lbtn-name { display:block; }
+.lbtn-desc { font-size:11px; opacity:0.8; }
+
+/* ===== ゲーム画面 ===== */
+#game { gap:6px; justify-content:flex-start; padding-top:8px; }
+
+.g-header {
+  width:100%; max-width:380px;
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:4px;
+}
+.back-btn {
+  background:rgba(255,255,255,0.08); border:none; color:#fff;
+  font-family:inherit; font-size:18px; font-weight:800;
+  padding:8px 14px; border-radius:12px; cursor:pointer;
+}
+.lvbadge {
+  font-size:12px; font-weight:800; padding:5px 12px; border-radius:20px; letter-spacing:1px;
+}
+.lvbadge-easy { background:rgba(34,197,94,0.15); color:#4ade80; }
+.lvbadge-mid  { background:rgba(245,158,11,0.15); color:#fbbf24; }
+.lvbadge-hard { background:rgba(239,68,68,0.15);  color:#f87171; }
+
+.turn-banner {
+  width:100%; max-width:380px;
+  text-align:center;
+  font-size:13px; font-weight:800;
+  padding:8px;
+  border-radius:12px;
+  margin-bottom:2px;
+  transition:all 0.3s;
+}
+.turn-player { background:rgba(69,183,209,0.15); color:#67e8f9; }
+.turn-cpu    { background:rgba(239,68,68,0.15);   color:#fca5a5; }
+
+.cpu-zone {
+  width:100%; max-width:380px;
+  background:#1a1a2e; border-radius:22px;
+  padding:10px 16px; border:2px solid rgba(255,255,255,0.05);
+  position:relative;
+}
+.zone-label {
+  font-size:10px; font-weight:800; letter-spacing:2px;
+  color:rgba(255,255,255,0.35); text-align:center; margin-bottom:10px;
+}
+
+.cpu-char { display:flex; flex-direction:column; align-items:center; gap:6px; }
+.cpu-face { font-size:44px; line-height:1; transition:all 0.3s; }
+
+.cpu-hands-row { display:flex; gap:24px; justify-content:center; }
+.cpu-hand { display:flex; flex-direction:column; align-items:center; gap:2px; position:relative; }
+.cpu-fist { font-size:38px; }
+.cpu-thumbup {
+  font-size:22px; position:absolute; top:-20px;
+  opacity:0; transform:translateY(8px);
+  transition:all 0.35s cubic-bezier(0.34,1.56,0.64,1);
+}
+.cpu-thumbup.show { opacity:1; transform:translateY(0); }
+.cpu-hand.out { opacity:0.2; }
+
+.hint-bubble {
+  position:absolute; top:12px; right:12px;
+  background:rgba(245,158,11,0.15); border:1px solid rgba(245,158,11,0.4);
+  border-radius:10px; padding:5px 9px;
+  font-size:11px; font-weight:800; color:#fbbf24;
+  line-height:1.5; text-align:center;
+  opacity:0; transition:opacity 0.3s; max-width:110px;
+}
+.hint-bubble.show { opacity:1; }
+
+.middle-zone {
+  width:100%; max-width:380px;
+  display:flex; flex-direction:column; align-items:center; gap:4px;
+}
+.call-phrase { font-size:16px; font-weight:800; color:rgba(255,255,255,0.4); }
+.call-number {
+  font-size:64px; font-weight:900; line-height:1;
+  color:rgba(255,255,255,0.12); transition:color 0.3s;
+}
+.call-number.revealed { color:#f5a623; }
+.call-number.hit { animation:numPop 0.5s cubic-bezier(0.34,1.56,0.64,1); color:#f5a623; }
+@keyframes numPop { 0%{transform:scale(1)} 50%{transform:scale(1.5)} 100%{transform:scale(1)} }
+
+.num-picker {
+  display:flex; gap:8px; flex-wrap:wrap; justify-content:center;
+  width:100%; max-width:380px;
+}
+.num-btn {
+  width:58px; height:58px; border-radius:16px; border:2px solid rgba(255,255,255,0.12);
+  background:rgba(255,255,255,0.05); color:#fff;
+  font-family:inherit; font-size:24px; font-weight:900; cursor:pointer;
+  transition:all 0.15s;
+}
+.num-btn:active { transform:scale(0.92); }
+.num-btn.selected { background:rgba(245,158,11,0.2); border-color:#f5a623; color:#f5a623; }
+
+.player-zone {
+  width:100%; max-width:380px;
+  background:#1a1a2e; border-radius:22px;
+  padding:10px 16px; border:2px solid rgba(255,255,255,0.05);
+}
+.player-hands-row { display:flex; gap:16px; justify-content:center; }
+.p-hand-btn {
+  display:flex; flex-direction:column; align-items:center; gap:4px;
+  background:none; border:2px solid rgba(255,255,255,0.1);
+  border-radius:18px; padding:10px 20px; cursor:pointer;
+  transition:all 0.2s; min-width:110px; position:relative;
+}
+.p-hand-btn.up { background:rgba(245,158,11,0.12); border-color:#f5a623; }
+.p-hand-btn.out { opacity:0.25; pointer-events:none; }
+.p-fist { font-size:42px; }
+.p-thumb { font-size:24px; height:28px; opacity:0; transition:opacity 0.2s; }
+.p-hand-btn.up .p-thumb { opacity:1; }
+.p-hand-label { font-size:11px; font-weight:800; color:rgba(255,255,255,0.4); letter-spacing:1px; }
+
+.action-btn {
+  width:100%; max-width:380px;
+  padding:14px; border-radius:20px; border:none;
+  background:linear-gradient(135deg,#e94560,#ff6b6b); color:#fff;
+  font-family:inherit; font-size:20px; font-weight:900;
+  cursor:pointer; letter-spacing:2px;
+  box-shadow:0 8px 28px rgba(233,69,96,0.35);
+  transition:transform 0.15s;
+}
+.action-btn:active { transform:scale(0.97); }
+.action-btn:disabled { opacity:0.35; pointer-events:none; }
+.action-btn.cpu-turn { background:linear-gradient(135deg,#6366f1,#8b5cf6); box-shadow:0 8px 28px rgba(99,102,241,0.35); }
+
+.total-txt { font-size:13px; font-weight:800; color:rgba(255,255,255,0.4); min-height:20px; }
+.total-txt span { color:#f5a623; }
+
+.thinking { display:flex; gap:5px; justify-content:center; height:14px; opacity:0; transition:opacity 0.2s; }
+.thinking.show { opacity:1; }
+.thinking span { width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.4);animation:db 0.8s ease-in-out infinite; }
+.thinking span:nth-child(2){animation-delay:0.15s}
+.thinking span:nth-child(3){animation-delay:0.3s}
+@keyframes db{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-6px)}}
+
+.overlay {
+  position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+  backdrop-filter:blur(10px); z-index:100;
+  opacity:0; pointer-events:none; transition:opacity 0.3s;
+}
+.overlay.show { opacity:1; pointer-events:all; }
+.result-card {
+  background:#1a1a2e; border-radius:28px; padding:36px;
+  text-align:center; max-width:300px; width:90%;
+  border:2px solid rgba(255,255,255,0.08);
+  transform:scale(0.8); transition:transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+}
+.overlay.show .result-card { transform:scale(1); }
+.r-emoji { font-size:64px; display:block; margin-bottom:10px; }
+.r-title { font-size:32px; font-weight:900; margin-bottom:6px; }
+.r-sub { font-size:14px; color:rgba(255,255,255,0.55); margin-bottom:22px; font-weight:700; }
+.r-btns { display:flex; flex-direction:column; gap:10px; }
+.r-retry { padding:14px; border-radius:14px; border:none; background:linear-gradient(135deg,#22c55e,#16a34a); color:#fff; font-family:inherit; font-size:17px; font-weight:800; cursor:pointer; }
+.r-menu  { padding:12px; border-radius:14px; border:2px solid rgba(255,255,255,0.12); background:none; color:rgba(255,255,255,0.6); font-family:inherit; font-size:14px; font-weight:800; cursor:pointer; }
+
+.hands-status {
+  display:flex; gap:6px; align-items:center; justify-content:center;
+  font-size:20px; margin-top:2px;
+}
+</style>
+</head>
+<body>
+
+<!-- サイトヘッダー -->
+<header class="site-header">
+  <nav>
+    <a href="index.html" class="logo">Nearco LLC.</a>
+    <ul class="nav-links">
+      <li><a href="index.html#services">事業内容</a></li>
+      <li><a href="index.html#about">会社概要</a></li>
+      <li><a href="index.html#contact">お問い合わせ</a></li>
+      <li><a href="game.html">ミニゲーム</a></li>
+    </ul>
+  </nav>
+</header>
+
+<!-- ゲーム本体 -->
+<div class="game-container">
+
+<!-- タイトル -->
+<div id="title" class="screen active">
+  <div class="game-logo">スイッチ！</div>
+  <div class="logo-sub">おやゆびゲーム</div>
+  <div class="level-btns">
+    <button class="lbtn lbtn-easy" onclick="startGame('easy')">
+      <span class="lbtn-icon">&#x1F31F;</span>
+      <div class="lbtn-text"><span class="lbtn-name">しょきゅう</span><span class="lbtn-desc">てきのようすがなんとなくわかる</span></div>
+    </button>
+    <button class="lbtn lbtn-mid" onclick="startGame('mid')">
+      <span class="lbtn-icon">&#x1F525;</span>
+      <div class="lbtn-text"><span class="lbtn-name">ちゅうきゅう</span><span class="lbtn-desc">ちょっとだけヒントがある</span></div>
+    </button>
+    <button class="lbtn lbtn-hard" onclick="startGame('hard')">
+      <span class="lbtn-icon">&#x1F480;</span>
+      <div class="lbtn-text"><span class="lbtn-name">じょうきゅう</span><span class="lbtn-desc">てきのきもちはよめない</span></div>
+    </button>
+  </div>
+</div>
+
+<!-- ゲーム -->
+<div id="game" class="screen">
+  <div class="g-header">
+    <button class="back-btn" onclick="goTitle()">&#x2190; もどる</button>
+    <div id="lvbadge" class="lvbadge"></div>
+    <div style="font-size:12px;color:rgba(255,255,255,0.4);font-weight:800;" id="hand-status"></div>
+  </div>
+
+  <div class="turn-banner" id="turn-banner"></div>
+
+  <div class="cpu-zone">
+    <div class="zone-label">てき</div>
+    <div class="hint-bubble" id="hint"></div>
+    <div class="cpu-char">
+      <span class="cpu-face" id="cpu-face">&#x1F610;</span>
+      <div class="thinking" id="thinking"><span></span><span></span><span></span></div>
+      <div class="cpu-hands-row">
+        <div class="cpu-hand" id="chl">
+          <span class="cpu-thumbup" id="cth-L">&#x1F44D;</span>
+          <span class="cpu-fist">&#x270A;</span>
+        </div>
+        <div class="cpu-hand" id="chr">
+          <span class="cpu-thumbup" id="cth-R">&#x1F44D;</span>
+          <span class="cpu-fist">&#x270A;</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="middle-zone">
+    <div class="call-phrase">いっせーのー</div>
+    <div class="call-number" id="call-num">？</div>
+    <div class="total-txt" id="total-txt"></div>
+  </div>
+
+  <div class="num-picker" id="num-picker" style="display:none"></div>
+
+  <div class="player-zone">
+    <div class="zone-label">きみのて</div>
+    <div class="player-hands-row">
+      <button class="p-hand-btn" id="ph-L" onclick="toggleP('L')">
+        <span class="p-thumb">&#x1F44D;</span>
+        <span class="p-fist">&#x270A;</span>
+        <span class="p-hand-label">ひだり</span>
+      </button>
+      <button class="p-hand-btn" id="ph-R" onclick="toggleP('R')">
+        <span class="p-thumb">&#x1F44D;</span>
+        <span class="p-fist">&#x270A;</span>
+        <span class="p-hand-label">みぎ</span>
+      </button>
+    </div>
+  </div>
+
+  <button class="action-btn" id="action-btn" onclick="doAction()">いっせーのー！</button>
+</div>
+
+<!-- 結果 -->
+<div class="overlay" id="overlay">
+  <div class="result-card">
+    <span class="r-emoji" id="r-emoji"></span>
+    <div class="r-title" id="r-title"></div>
+    <div class="r-sub" id="r-sub"></div>
+    <div class="r-btns">
+      <button class="r-retry" id="r-retry">もういっかい！</button>
+      <button class="r-menu" onclick="goTitle()">レベルえらびにもどる</button>
+    </div>
+  </div>
+</div>
+
+</div><!-- /game-container -->
+
+<!-- サイトフッター -->
+<footer class="site-footer">
+  <div style="margin-bottom:1rem;">
+    <a href="index.html">トップページへ戻る</a>
+  </div>
+  <p>&copy; 2022 - 2026 Nearco LLC. All Rights Reserved.</p>
+</footer>
+
+<script>
+// ===== 状態 =====
+let level = 'easy';
+let isAnimating = false;
+
+let pL = true, pR = true;
+let cL = true, cR = true;
+
+let pThL = false, pThR = false;
+let cThL = false, cThR = false;
+
+let currentParent = 'player';
+
+let selectedNum = null;
+let cpuDecidedNum = null;
+
+let cpuInternalL = false, cpuInternalR = false;
+
+const FACES = {
+  neutral: '\u{1F610}', thinking: '\u{1F914}', happy: '\u{1F604}',
+  excited: '\u{1F606}', sneaky: '\u{1F60F}', confident: '\u{1F60E}',
+  worried: '\u{1F630}', poker: '\u{1F636}'
+};
+
+function face(mood) {
+  if (level === 'hard') return FACES.poker;
+  return FACES[mood] || FACES.neutral;
+}
+
+function startGame(lv) {
+  level = lv;
+  pL = true; pR = true; cL = true; cR = true;
+  pThL = false; pThR = false; cThL = false; cThR = false;
+  currentParent = 'player';
+  selectedNum = null;
+  isAnimating = false;
+  showScreen('game');
+  setupBadge();
+  renderAll();
+  setupTurn();
+}
+
+function setupBadge() {
+  const b = document.getElementById('lvbadge');
+  const labels = {easy:'\u3057\u3087\u304D\u3085\u3046', mid:'\u3061\u3085\u3046\u304D\u3085\u3046', hard:'\u3058\u3087\u3046\u304D\u3085\u3046'};
+  const cls    = {easy:'lvbadge-easy', mid:'lvbadge-mid', hard:'lvbadge-hard'};
+  b.textContent = labels[level];
+  b.className = 'lvbadge ' + cls[level];
+}
+
+function setupTurn() {
+  isAnimating = false;
+  selectedNum = null;
+  pThL = false; pThR = false;
+  cThL = false; cThR = false;
+
+  showCpuThumb('L', false);
+  showCpuThumb('R', false);
+
+  const cn = document.getElementById('call-num');
+  cn.textContent = '\uFF1F';
+  cn.className = 'call-number';
+  document.getElementById('total-txt').textContent = '';
+  document.getElementById('hint').classList.remove('show');
+  document.getElementById('thinking').classList.remove('show');
+
+  updateHandStatus();
+  renderPlayerHands();
+
+  if (currentParent === 'player') {
+    setupPlayerTurn();
+  } else {
+    setupCpuTurn();
+  }
+}
+
+function setupPlayerTurn() {
+  const banner = document.getElementById('turn-banner');
+  banner.textContent = '\u{1F451} \u304D\u307F\u304C \u304A\u3084\u306E \u30BF\u30FC\u30F3';
+  banner.className = 'turn-banner turn-player';
+
+  document.getElementById('cpu-face').textContent = face('neutral');
+
+  const maxThumb = activeCount(pL,pR) + activeCount(cL,cR);
+  buildNumPicker(maxThumb);
+  document.getElementById('num-picker').style.display = 'flex';
+
+  const btn = document.getElementById('action-btn');
+  btn.textContent = '\u3044\u3063\u305B\u30FC\u306E\u30FC\uFF01';
+  btn.className = 'action-btn';
+  btn.disabled = true;
+
+  decideCpuThumbs();
+  if (level !== 'hard') {
+    showHintForPlayerTurn();
+  }
+}
+
+function setupCpuTurn() {
+  const banner = document.getElementById('turn-banner');
+  banner.textContent = '\u{1F47E} \u3066\u304D\u304C \u304A\u3084\u306E \u30BF\u30FC\u30F3';
+  banner.className = 'turn-banner turn-cpu';
+
+  document.getElementById('cpu-face').textContent = face('thinking');
+  document.getElementById('num-picker').style.display = 'none';
+
+  const btn = document.getElementById('action-btn');
+  btn.textContent = '\u304A\u3084\u3086\u3073\u3092\u304D\u3081\u308B\uFF01';
+  btn.className = 'action-btn cpu-turn';
+  btn.disabled = false;
+
+  decideCpuAll();
+  if (level !== 'hard') {
+    showHintForCpuTurn();
+  }
+}
+
+function decideCpuThumbs() {
+  const p = thumbProb();
+  cpuInternalL = cL && Math.random() < p;
+  cpuInternalR = cR && Math.random() < p;
+}
+
+function decideCpuAll() {
+  const p = thumbProb();
+  cpuInternalL = cL && Math.random() < p;
+  cpuInternalR = cR && Math.random() < p;
+
+  const maxTotal = activeCount(pL,pR) + activeCount(cL,cR);
+  const cpuUp = (cpuInternalL?1:0) + (cpuInternalR?1:0);
+
+  const predictPlayerUp = Math.floor(Math.random() * (activeCount(pL,pR)+1));
+  const target = cpuUp + predictPlayerUp;
+
+  const hitRate = level==='easy' ? 0.55 : level==='mid' ? 0.45 : 0.38;
+  if (Math.random() < hitRate) {
+    cpuDecidedNum = target;
+  } else {
+    const arr = [];
+    for (let i=0; i<=maxTotal; i++) if(i!==target) arr.push(i);
+    cpuDecidedNum = arr.length ? arr[Math.floor(Math.random()*arr.length)] : target;
+  }
+}
+
+function thumbProb() {
+  return 0.5;
+}
+
+function showHintForPlayerTurn() {
+  const hint = document.getElementById('hint');
+  const cpuUp = (cpuInternalL?1:0)+(cpuInternalR?1:0);
+  if (level === 'easy') {
+    if (cpuUp === 0) { hint.textContent='\u3042\u307E\u308A\n\u3042\u3052\u306A\u3055\u305D\u3046'; document.getElementById('cpu-face').textContent = face('sneaky'); }
+    else if (cpuUp === 2 && cL && cR) { hint.textContent='\u308A\u3087\u3046\u3066\n\u3042\u3052\u305D\u3046\uFF01'; document.getElementById('cpu-face').textContent = face('excited'); }
+    else { hint.textContent='\u3069\u3063\u3061\u304B\n\u3042\u3052\u308B\u304B\u3082'; document.getElementById('cpu-face').textContent = face('thinking'); }
+    hint.classList.add('show');
+  } else if (level === 'mid') {
+    if (Math.random() < 0.55) {
+      const msgs = ['\u306A\u3093\u304B\u8003\u3048\u3066\u308B','\u3046\u30FC\u3093\u2026','\u3042\u3084\u3057\u3044\u8868\u60C5','\u305F\u304F\u3089\u3093\u3067\u308B\uFF1F'];
+      hint.textContent = msgs[Math.floor(Math.random()*msgs.length)];
+      hint.classList.add('show');
+    }
+  }
+}
+
+function showHintForCpuTurn() {
+  const hint = document.getElementById('hint');
+  const cpuUp = (cpuInternalL?1:0)+(cpuInternalR?1:0);
+  if (level === 'easy') {
+    if (cpuUp === 0) { hint.textContent='\u3042\u307E\u308A\n\u3042\u3052\u306A\u3055\u305D\u3046'; }
+    else if (cpuUp === 2 && cL && cR) { hint.textContent='\u308A\u3087\u3046\u3066\n\u3042\u3052\u305D\u3046\uFF01'; }
+    else { hint.textContent='\u3069\u3063\u3061\u304B\n\u304B\u306A\uFF1F'; }
+    hint.classList.add('show');
+  } else if (level === 'mid') {
+    if (Math.random() < 0.5) {
+      const msgs = ['\u306A\u3093\u304B\u8003\u3048\u3066\u308B','\u2026','\u3082\u3058\u3082\u3058\u3057\u3066\u308B','\u81EA\u4FE1\u3042\u308A\u305D\u3046'];
+      hint.textContent = msgs[Math.floor(Math.random()*msgs.length)];
+      hint.classList.add('show');
+    }
+  }
+}
+
+function buildNumPicker(max) {
+  const picker = document.getElementById('num-picker');
+  picker.innerHTML = '';
+  for (let i=0; i<=max; i++) {
+    const btn = document.createElement('button');
+    btn.className = 'num-btn';
+    btn.textContent = i;
+    btn.onclick = () => selectNum(i, btn);
+    picker.appendChild(btn);
+  }
+}
+
+function selectNum(n, btn) {
+  if (isAnimating) return;
+  selectedNum = n;
+  document.querySelectorAll('.num-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  document.getElementById('action-btn').disabled = false;
+}
+
+function toggleP(side) {
+  if (isAnimating) return;
+  if (side==='L') { if(!pL) return; pThL=!pThL; }
+  else            { if(!pR) return; pThR=!pThR; }
+  renderPlayerHands();
+}
+
+function doAction() {
+  if (isAnimating) return;
+  if (currentParent === 'player') {
+    if (selectedNum === null) return;
+    doPlayerParent();
+  } else {
+    doCpuParent();
+  }
+}
+
+function doPlayerParent() {
+  isAnimating = true;
+  document.getElementById('action-btn').disabled = true;
+  document.getElementById('num-picker').style.display = 'none';
+
+  const cn = document.getElementById('call-num');
+  cn.textContent = selectedNum;
+  cn.className = 'call-number revealed';
+
+  cThL = cpuInternalL;
+  cThR = cpuInternalR;
+  showCpuThumb('L', cThL);
+  showCpuThumb('R', cThR);
+
+  const total = (pThL?1:0)+(pThR?1:0)+(cThL?1:0)+(cThR?1:0);
+  const hit = (selectedNum === total);
+
+  document.getElementById('total-txt').textContent = `\u304A\u3084\u3086\u3073\u306E\u3054\u3046\u3051\u3044\uFF1A${total}\u307B\u3093`;
+
+  if (hit) {
+    cn.classList.add('hit');
+    document.getElementById('cpu-face').textContent = face('worried');
+  } else {
+    document.getElementById('cpu-face').textContent = face('happy');
+  }
+
+  setTimeout(() => resolveRound(hit, 'player', total), 1300);
+}
+
+function doCpuParent() {
+  isAnimating = true;
+  document.getElementById('action-btn').disabled = true;
+
+  document.getElementById('thinking').classList.add('show');
+  document.getElementById('cpu-face').textContent = face('thinking');
+
+  const thinkTime = level==='easy' ? 1200 : level==='mid' ? 900 : 600;
+
+  setTimeout(() => {
+    document.getElementById('thinking').classList.remove('show');
+
+    const cn = document.getElementById('call-num');
+    cn.textContent = cpuDecidedNum;
+    cn.className = 'call-number revealed';
+
+    cThL = cpuInternalL;
+    cThR = cpuInternalR;
+    showCpuThumb('L', cThL);
+    showCpuThumb('R', cThR);
+
+    const total = (pThL?1:0)+(pThR?1:0)+(cThL?1:0)+(cThR?1:0);
+    const hit = (cpuDecidedNum === total);
+
+    document.getElementById('total-txt').textContent = `\u304A\u3084\u3086\u3073\u306E\u3054\u3046\u3051\u3044\uFF1A${total}\u307B\u3093`;
+
+    if (hit) {
+      cn.classList.add('hit');
+      document.getElementById('cpu-face').textContent = face('excited');
+    } else {
+      document.getElementById('cpu-face').textContent = face('worried');
+    }
+
+    setTimeout(() => resolveRound(hit, 'cpu', total), 1300);
+  }, thinkTime);
+}
+
+function resolveRound(hit, parent, total) {
+  if (hit) {
+    if (parent === 'player') withdrawPlayer();
+    else withdrawCpu();
+
+    setTimeout(() => {
+      if (!pL && !pR) { showResult(true); return; }
+      if (!cL && !cR) { showResult(false); return; }
+      currentParent = currentParent === 'player' ? 'cpu' : 'player';
+      setupTurn();
+    }, 600);
+  } else {
+    setTimeout(() => {
+      currentParent = currentParent === 'player' ? 'cpu' : 'player';
+      setupTurn();
+    }, 600);
+  }
+}
+
+function withdrawPlayer() {
+  if (pL && pR) {
+    if (pThL && pL) { pL = false; }
+    else if (pThR && pR) { pR = false; }
+    else if (pL) { pL = false; }
+    else { pR = false; }
+  } else if (pL) { pL = false; }
+  else if (pR) { pR = false; }
+  renderPlayerHands();
+}
+
+function withdrawCpu() {
+  if (cL && cR) {
+    if (cThL && cL) { cL = false; }
+    else if (cThR && cR) { cR = false; }
+    else if (cL) { cL = false; }
+    else { cR = false; }
+  } else if (cL) { cL = false; }
+  else if (cR) { cR = false; }
+  renderCpuHands();
+}
+
+function showResult(playerWin) {
+  const ov = document.getElementById('overlay');
+  document.getElementById('r-emoji').textContent = playerWin ? '\u{1F3C6}' : '\u{1F622}';
+  document.getElementById('r-title').textContent = playerWin ? '\u3084\u3063\u305F\u30FC\uFF01' : '\u307E\u3051\u3061\u3083\u3063\u305F';
+  document.getElementById('r-title').style.color = playerWin ? '#4ade80' : '#f87171';
+  document.getElementById('r-sub').textContent = playerWin ? '\u3066\u304D\u306B\u304B\u3063\u305F\u3088\uFF01\u3059\u3054\u3044\uFF01' : '\u3082\u3046\u3044\u3063\u304B\u3044\u304C\u3093\u3070\u308C\uFF01';
+  document.getElementById('r-retry').onclick = () => {
+    ov.classList.remove('show');
+    startGame(level);
+  };
+  ov.classList.add('show');
+  if (playerWin) spawnConfetti();
+}
+
+function renderAll() {
+  renderPlayerHands();
+  renderCpuHands();
+  updateHandStatus();
+}
+
+function renderPlayerHands() {
+  const btnL = document.getElementById('ph-L');
+  const btnR = document.getElementById('ph-R');
+  btnL.className = 'p-hand-btn' + (!pL?' out':pThL?' up':'');
+  btnR.className = 'p-hand-btn' + (!pR?' out':pThR?' up':'');
+}
+
+function renderCpuHands() {
+  const hL = document.getElementById('chl');
+  const hR = document.getElementById('chr');
+  hL.className = 'cpu-hand' + (!cL?' out':'');
+  hR.className = 'cpu-hand' + (!cR?' out':'');
+}
+
+function showCpuThumb(side, up) {
+  document.getElementById('cth-'+side).className = 'cpu-thumbup' + (up?' show':'');
+}
+
+function updateHandStatus() {
+  const pHands = (pL?'\u270A':'\u3000') + (pR?'\u270A':'\u3000');
+  const cHands = (cL?'\u270A':'\u3000') + (cR?'\u270A':'\u3000');
+  document.getElementById('hand-status').textContent = `\u304D:${pHands} \u3066:${cHands}`;
+}
+
+function activeCount(...bools) {
+  return bools.filter(Boolean).length;
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function goTitle() {
+  document.getElementById('overlay').classList.remove('show');
+  showScreen('title');
+}
+
+function spawnConfetti() {
+  const colors = ['#f5a623','#4ecdc4','#e94560','#a855f7','#45b7d1'];
+  for (let i=0; i<50; i++) {
+    const el = document.createElement('div');
+    const size = 6 + Math.random()*8;
+    el.style.cssText = `
+      position:fixed; pointer-events:none;
+      width:${size}px; height:${size}px;
+      background:${colors[Math.floor(Math.random()*colors.length)]};
+      border-radius:${Math.random()<0.5?'50%':'3px'};
+      left:${Math.random()*100}vw; top:-20px;
+      animation: cf ${1.5+Math.random()*2}s ease-in ${Math.random()*0.8}s forwards;
+      z-index:200;
+    `;
+    document.body.appendChild(el);
+    setTimeout(()=>el.remove(), 4000);
+  }
+}
+const sty = document.createElement('style');
+sty.textContent = `@keyframes cf { 0%{transform:translateY(0) rotate(0);opacity:1} 100%{transform:translateY(110vh) rotate(720deg);opacity:0} }`;
+document.head.appendChild(sty);
+</script>
+</body>
+</html>

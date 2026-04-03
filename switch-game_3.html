@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>スイッチ！</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap');
+
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+body {
+  font-family: 'Nunito', sans-serif;
+  background: #0f0f1a;
+  color: #eee;
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  overflow-y: auto;
+}
+
+.screen { display:none; flex-direction:column; align-items:center; justify-content:flex-start; width:100%; min-height:100vh; padding:10px 16px 20px; }
+.screen.active { display:flex; }
+
+/* ===== タイトル ===== */
+.logo { font-size:72px; font-weight:900; background:linear-gradient(135deg,#f5a623,#e94560); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; animation:float 3s ease-in-out infinite; }
+@keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+.logo-sub { color:rgba(255,255,255,0.4); font-size:14px; letter-spacing:3px; margin-bottom:50px; }
+
+.level-btns { display:flex; flex-direction:column; gap:14px; width:100%; max-width:300px; }
+.lbtn {
+  padding:18px 24px; border-radius:18px; border:none; cursor:pointer;
+  font-family:inherit; font-size:20px; font-weight:800;
+  display:flex; align-items:center; gap:12px;
+  transition:transform 0.15s;
+}
+.lbtn:active { transform:scale(0.96); }
+.lbtn-easy { background:linear-gradient(135deg,#22c55e,#16a34a); color:#fff; box-shadow:0 6px 24px rgba(34,197,94,0.35); }
+.lbtn-mid  { background:linear-gradient(135deg,#f59e0b,#d97706); color:#fff; box-shadow:0 6px 24px rgba(245,158,11,0.35); }
+.lbtn-hard { background:linear-gradient(135deg,#ef4444,#dc2626); color:#fff; box-shadow:0 6px 24px rgba(239,68,68,0.35); }
+.lbtn-icon { font-size:28px; }
+.lbtn-text { text-align:left; }
+.lbtn-name { display:block; }
+.lbtn-desc { font-size:11px; opacity:0.8; }
+
+/* ===== ゲーム画面 ===== */
+#game { gap:6px; justify-content:flex-start; padding-top:8px; }
+
+.g-header {
+  width:100%; max-width:380px;
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:4px;
+}
+.back-btn {
+  background:rgba(255,255,255,0.08); border:none; color:#fff;
+  font-family:inherit; font-size:18px; font-weight:800;
+  padding:8px 14px; border-radius:12px; cursor:pointer;
+}
+.lvbadge {
+  font-size:12px; font-weight:800; padding:5px 12px; border-radius:20px; letter-spacing:1px;
+}
+.lvbadge-easy { background:rgba(34,197,94,0.15); color:#4ade80; }
+.lvbadge-mid  { background:rgba(245,158,11,0.15); color:#fbbf24; }
+.lvbadge-hard { background:rgba(239,68,68,0.15);  color:#f87171; }
+
+/* 親表示 */
+.turn-banner {
+  width:100%; max-width:380px;
+  text-align:center;
+  font-size:13px; font-weight:800;
+  padding:8px;
+  border-radius:12px;
+  margin-bottom:2px;
+  transition:all 0.3s;
+}
+.turn-player { background:rgba(69,183,209,0.15); color:#67e8f9; }
+.turn-cpu    { background:rgba(239,68,68,0.15);   color:#fca5a5; }
+
+/* CPUゾーン */
+.cpu-zone {
+  width:100%; max-width:380px;
+  background:#1a1a2e; border-radius:22px;
+  padding:10px 16px; border:2px solid rgba(255,255,255,0.05);
+  position:relative;
+}
+.zone-label {
+  font-size:10px; font-weight:800; letter-spacing:2px;
+  color:rgba(255,255,255,0.35); text-align:center; margin-bottom:10px;
+}
+
+.cpu-char { display:flex; flex-direction:column; align-items:center; gap:6px; }
+.cpu-face { font-size:44px; line-height:1; transition:all 0.3s; }
+
+.cpu-hands-row { display:flex; gap:24px; justify-content:center; }
+.cpu-hand { display:flex; flex-direction:column; align-items:center; gap:2px; position:relative; }
+.cpu-fist { font-size:38px; }
+.cpu-thumbup {
+  font-size:22px; position:absolute; top:-20px;
+  opacity:0; transform:translateY(8px);
+  transition:all 0.35s cubic-bezier(0.34,1.56,0.64,1);
+}
+.cpu-thumbup.show { opacity:1; transform:translateY(0); }
+.cpu-hand.out { opacity:0.2; }
+
+/* ヒント吹き出し */
+.hint-bubble {
+  position:absolute; top:12px; right:12px;
+  background:rgba(245,158,11,0.15); border:1px solid rgba(245,158,11,0.4);
+  border-radius:10px; padding:5px 9px;
+  font-size:11px; font-weight:800; color:#fbbf24;
+  line-height:1.5; text-align:center;
+  opacity:0; transition:opacity 0.3s; max-width:110px;
+}
+.hint-bubble.show { opacity:1; }
+
+/* 中央エリア：数字宣言 or CPU宣言表示 */
+.middle-zone {
+  width:100%; max-width:380px;
+  display:flex; flex-direction:column; align-items:center; gap:4px;
+}
+.call-phrase { font-size:16px; font-weight:800; color:rgba(255,255,255,0.4); }
+.call-number {
+  font-size:64px; font-weight:900; line-height:1;
+  color:rgba(255,255,255,0.12); transition:color 0.3s;
+}
+.call-number.revealed { color:#f5a623; }
+.call-number.hit { animation:numPop 0.5s cubic-bezier(0.34,1.56,0.64,1); color:#f5a623; }
+@keyframes numPop { 0%{transform:scale(1)} 50%{transform:scale(1.5)} 100%{transform:scale(1)} }
+
+/* プレイヤーターン：数字選択ボタン */
+.num-picker {
+  display:flex; gap:8px; flex-wrap:wrap; justify-content:center;
+  width:100%; max-width:380px;
+}
+.num-btn {
+  width:58px; height:58px; border-radius:16px; border:2px solid rgba(255,255,255,0.12);
+  background:rgba(255,255,255,0.05); color:#fff;
+  font-family:inherit; font-size:24px; font-weight:900; cursor:pointer;
+  transition:all 0.15s;
+}
+.num-btn:active { transform:scale(0.92); }
+.num-btn.selected { background:rgba(245,158,11,0.2); border-color:#f5a623; color:#f5a623; }
+
+/* プレイヤーゾーン */
+.player-zone {
+  width:100%; max-width:380px;
+  background:#1a1a2e; border-radius:22px;
+  padding:10px 16px; border:2px solid rgba(255,255,255,0.05);
+}
+.player-hands-row { display:flex; gap:16px; justify-content:center; }
+.p-hand-btn {
+  display:flex; flex-direction:column; align-items:center; gap:4px;
+  background:none; border:2px solid rgba(255,255,255,0.1);
+  border-radius:18px; padding:10px 20px; cursor:pointer;
+  transition:all 0.2s; min-width:110px; position:relative;
+}
+.p-hand-btn.up { background:rgba(245,158,11,0.12); border-color:#f5a623; }
+.p-hand-btn.out { opacity:0.25; pointer-events:none; }
+.p-fist { font-size:42px; }
+.p-thumb { font-size:24px; height:28px; opacity:0; transition:opacity 0.2s; }
+.p-hand-btn.up .p-thumb { opacity:1; }
+.p-hand-label { font-size:11px; font-weight:800; color:rgba(255,255,255,0.4); letter-spacing:1px; }
+
+/* アクションボタン */
+.action-btn {
+  width:100%; max-width:380px;
+  padding:14px; border-radius:20px; border:none;
+  background:linear-gradient(135deg,#e94560,#ff6b6b); color:#fff;
+  font-family:inherit; font-size:20px; font-weight:900;
+  cursor:pointer; letter-spacing:2px;
+  box-shadow:0 8px 28px rgba(233,69,96,0.35);
+  transition:transform 0.15s;
+}
+.action-btn:active { transform:scale(0.97); }
+.action-btn:disabled { opacity:0.35; pointer-events:none; }
+.action-btn.cpu-turn { background:linear-gradient(135deg,#6366f1,#8b5cf6); box-shadow:0 8px 28px rgba(99,102,241,0.35); }
+
+/* 合計テキスト */
+.total-txt { font-size:13px; font-weight:800; color:rgba(255,255,255,0.4); min-height:20px; }
+.total-txt span { color:#f5a623; }
+
+/* thinking dots */
+.thinking { display:flex; gap:5px; justify-content:center; height:14px; opacity:0; transition:opacity 0.2s; }
+.thinking.show { opacity:1; }
+.thinking span { width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.4);animation:db 0.8s ease-in-out infinite; }
+.thinking span:nth-child(2){animation-delay:0.15s}
+.thinking span:nth-child(3){animation-delay:0.3s}
+@keyframes db{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-6px)}}
+
+/* 結果オーバーレイ */
+.overlay {
+  position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+  backdrop-filter:blur(10px); z-index:100;
+  opacity:0; pointer-events:none; transition:opacity 0.3s;
+}
+.overlay.show { opacity:1; pointer-events:all; }
+.result-card {
+  background:#1a1a2e; border-radius:28px; padding:36px;
+  text-align:center; max-width:300px; width:90%;
+  border:2px solid rgba(255,255,255,0.08);
+  transform:scale(0.8); transition:transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+}
+.overlay.show .result-card { transform:scale(1); }
+.r-emoji { font-size:64px; display:block; margin-bottom:10px; }
+.r-title { font-size:32px; font-weight:900; margin-bottom:6px; }
+.r-sub { font-size:14px; color:rgba(255,255,255,0.55); margin-bottom:22px; font-weight:700; }
+.r-btns { display:flex; flex-direction:column; gap:10px; }
+.r-retry { padding:14px; border-radius:14px; border:none; background:linear-gradient(135deg,#22c55e,#16a34a); color:#fff; font-family:inherit; font-size:17px; font-weight:800; cursor:pointer; }
+.r-menu  { padding:12px; border-radius:14px; border:2px solid rgba(255,255,255,0.12); background:none; color:rgba(255,255,255,0.6); font-family:inherit; font-size:14px; font-weight:800; cursor:pointer; }
+
+/* 手の状態アイコン行 */
+.hands-status {
+  display:flex; gap:6px; align-items:center; justify-content:center;
+  font-size:20px; margin-top:2px;
+}
+</style>
+</head>
+<body>
+
+<!-- タイトル -->
+<div id="title" class="screen active">
+  <div class="logo">スイッチ！</div>
+  <div class="logo-sub">おやゆびゲーム</div>
+  <div class="level-btns">
+    <button class="lbtn lbtn-easy" onclick="startGame('easy')">
+      <span class="lbtn-icon">🌟</span>
+      <div class="lbtn-text"><span class="lbtn-name">しょきゅう</span><span class="lbtn-desc">てきのようすがなんとなくわかる</span></div>
+    </button>
+    <button class="lbtn lbtn-mid" onclick="startGame('mid')">
+      <span class="lbtn-icon">🔥</span>
+      <div class="lbtn-text"><span class="lbtn-name">ちゅうきゅう</span><span class="lbtn-desc">ちょっとだけヒントがある</span></div>
+    </button>
+    <button class="lbtn lbtn-hard" onclick="startGame('hard')">
+      <span class="lbtn-icon">💀</span>
+      <div class="lbtn-text"><span class="lbtn-name">じょうきゅう</span><span class="lbtn-desc">てきのきもちはよめない</span></div>
+    </button>
+  </div>
+</div>
+
+<!-- ゲーム -->
+<div id="game" class="screen">
+  <div class="g-header">
+    <button class="back-btn" onclick="goTitle()">← もどる</button>
+    <div id="lvbadge" class="lvbadge"></div>
+    <div style="font-size:12px;color:rgba(255,255,255,0.4);font-weight:800;" id="hand-status"></div>
+  </div>
+
+  <!-- 親バナー -->
+  <div class="turn-banner" id="turn-banner"></div>
+
+  <!-- CPU -->
+  <div class="cpu-zone">
+    <div class="zone-label">てき</div>
+    <div class="hint-bubble" id="hint"></div>
+    <div class="cpu-char">
+      <span class="cpu-face" id="cpu-face">😐</span>
+      <div class="thinking" id="thinking"><span></span><span></span><span></span></div>
+      <div class="cpu-hands-row">
+        <div class="cpu-hand" id="chl">
+          <span class="cpu-thumbup" id="cth-L">👍</span>
+          <span class="cpu-fist">✊</span>
+        </div>
+        <div class="cpu-hand" id="chr">
+          <span class="cpu-thumbup" id="cth-R">👍</span>
+          <span class="cpu-fist">✊</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 掛け声・数字エリア -->
+  <div class="middle-zone">
+    <div class="call-phrase">いっせーのー</div>
+    <div class="call-number" id="call-num">？</div>
+    <div class="total-txt" id="total-txt"></div>
+  </div>
+
+  <!-- 数字ピッカー（プレイヤー親ターン用） -->
+  <div class="num-picker" id="num-picker" style="display:none"></div>
+
+  <!-- プレイヤー -->
+  <div class="player-zone">
+    <div class="zone-label">きみのて</div>
+    <div class="player-hands-row">
+      <button class="p-hand-btn" id="ph-L" onclick="toggleP('L')">
+        <span class="p-thumb">👍</span>
+        <span class="p-fist">✊</span>
+        <span class="p-hand-label">ひだり</span>
+      </button>
+      <button class="p-hand-btn" id="ph-R" onclick="toggleP('R')">
+        <span class="p-thumb">👍</span>
+        <span class="p-fist">✊</span>
+        <span class="p-hand-label">みぎ</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- アクションボタン -->
+  <button class="action-btn" id="action-btn" onclick="doAction()">いっせーのー！</button>
+</div>
+
+<!-- 結果 -->
+<div class="overlay" id="overlay">
+  <div class="result-card">
+    <span class="r-emoji" id="r-emoji"></span>
+    <div class="r-title" id="r-title"></div>
+    <div class="r-sub" id="r-sub"></div>
+    <div class="r-btns">
+      <button class="r-retry" id="r-retry">もういっかい！</button>
+      <button class="r-menu" onclick="goTitle()">レベルえらびにもどる</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== 状態 =====
+let level = 'easy';
+let isAnimating = false;
+
+// 手: true=出てる false=引っ込めた
+let pL = true, pR = true;  // player hands active
+let cL = true, cR = true;  // cpu hands active
+
+// 親指: true=上げてる
+let pThL = false, pThR = false;
+let cThL = false, cThR = false;
+
+// 親の順番: 'player' or 'cpu'
+// ゲーム開始はプレイヤーから
+let currentParent = 'player';
+
+let selectedNum = null;  // プレイヤー親のとき選んだ数字
+let cpuDecidedNum = null; // CPUが内部で決めた数字
+
+// CPUが内部で決めた親指
+let cpuInternalL = false, cpuInternalR = false;
+
+const FACES = {
+  neutral: '😐', thinking: '🤔', happy: '😄',
+  excited: '😆', sneaky: '😏', confident: '😎',
+  worried: '😰', poker: '😶'
+};
+
+function face(mood) {
+  if (level === 'hard') return FACES.poker;
+  return FACES[mood] || FACES.neutral;
+}
+
+// ===== スタート =====
+function startGame(lv) {
+  level = lv;
+  pL = true; pR = true; cL = true; cR = true;
+  pThL = false; pThR = false; cThL = false; cThR = false;
+  currentParent = 'player';
+  selectedNum = null;
+  isAnimating = false;
+  showScreen('game');
+  setupBadge();
+  renderAll();
+  setupTurn();
+}
+
+function setupBadge() {
+  const b = document.getElementById('lvbadge');
+  const labels = {easy:'しょきゅう', mid:'ちゅうきゅう', hard:'じょうきゅう'};
+  const cls    = {easy:'lvbadge-easy', mid:'lvbadge-mid', hard:'lvbadge-hard'};
+  b.textContent = labels[level];
+  b.className = 'lvbadge ' + cls[level];
+}
+
+// ===== ターンセットアップ =====
+function setupTurn() {
+  isAnimating = false;
+  selectedNum = null;
+  pThL = false; pThR = false;
+  cThL = false; cThR = false;
+
+  // CPU手の見た目リセット
+  showCpuThumb('L', false);
+  showCpuThumb('R', false);
+
+  // 数字リセット
+  const cn = document.getElementById('call-num');
+  cn.textContent = '？';
+  cn.className = 'call-number';
+  document.getElementById('total-txt').textContent = '';
+  document.getElementById('hint').classList.remove('show');
+  document.getElementById('thinking').classList.remove('show');
+
+  updateHandStatus();
+  renderPlayerHands();
+
+  if (currentParent === 'player') {
+    setupPlayerTurn();
+  } else {
+    setupCpuTurn();
+  }
+}
+
+function setupPlayerTurn() {
+  const banner = document.getElementById('turn-banner');
+  banner.textContent = '👑 きみが おやの ターン';
+  banner.className = 'turn-banner turn-player';
+
+  document.getElementById('cpu-face').textContent = face('neutral');
+
+  // 数字ピッカー表示
+  const maxThumb = activeCount(pL,pR) + activeCount(cL,cR);
+  buildNumPicker(maxThumb);
+  document.getElementById('num-picker').style.display = 'flex';
+
+  const btn = document.getElementById('action-btn');
+  btn.textContent = 'いっせーのー！';
+  btn.className = 'action-btn';
+  btn.disabled = true; // 数字選ぶまで
+
+  // CPUは内部で親指を決めてる（見せない）
+  decideCpuThumbs();
+  // 初級・中級ではヒント予告
+  if (level !== 'hard') {
+    showHintForPlayerTurn();
+  }
+}
+
+function setupCpuTurn() {
+  const banner = document.getElementById('turn-banner');
+  banner.textContent = '👾 てきが おやの ターン';
+  banner.className = 'turn-banner turn-cpu';
+
+  document.getElementById('cpu-face').textContent = face('thinking');
+  document.getElementById('num-picker').style.display = 'none';
+
+  const btn = document.getElementById('action-btn');
+  btn.textContent = 'おやゆびをきめる！';
+  btn.className = 'action-btn cpu-turn';
+  btn.disabled = false;
+
+  // CPUは内部で数字と親指を決めてる
+  decideCpuAll();
+  if (level !== 'hard') {
+    showHintForCpuTurn();
+  }
+}
+
+// ===== CPU決定ロジック =====
+function decideCpuThumbs() {
+  // プレイヤー親ターン：CPUの親指だけ決める
+  const p = thumbProb();
+  cpuInternalL = cL && Math.random() < p;
+  cpuInternalR = cR && Math.random() < p;
+}
+
+function decideCpuAll() {
+  // CPUターン：親指も数字も決める
+  const p = thumbProb();
+  cpuInternalL = cL && Math.random() < p;
+  cpuInternalR = cR && Math.random() < p;
+
+  // 合計の期待値から数字を決める
+  const maxTotal = activeCount(pL,pR) + activeCount(cL,cR);
+  const cpuUp = (cpuInternalL?1:0) + (cpuInternalR?1:0);
+
+  // プレイヤーが何本上げるか予測（ランダムに想定）
+  const predictPlayerUp = Math.floor(Math.random() * (activeCount(pL,pR)+1));
+  const target = cpuUp + predictPlayerUp;
+
+  // 難易度によって正解率を調整
+  const hitRate = level==='easy' ? 0.55 : level==='mid' ? 0.45 : 0.38;
+  if (Math.random() < hitRate) {
+    cpuDecidedNum = target;
+  } else {
+    // 外す
+    const arr = [];
+    for (let i=0; i<=maxTotal; i++) if(i!==target) arr.push(i);
+    cpuDecidedNum = arr.length ? arr[Math.floor(Math.random()*arr.length)] : target;
+  }
+}
+
+function thumbProb() {
+  return 0.5; // 純粋に50/50（難易度はヒントの有無で差別化）
+}
+
+// ===== ヒント表示 =====
+function showHintForPlayerTurn() {
+  const hint = document.getElementById('hint');
+  const cpuUp = (cpuInternalL?1:0)+(cpuInternalR?1:0);
+  if (level === 'easy') {
+    if (cpuUp === 0) { hint.textContent='あまり\nあげなさそう'; document.getElementById('cpu-face').textContent = face('sneaky'); }
+    else if (cpuUp === 2 && cL && cR) { hint.textContent='りょうて\nあげそう！'; document.getElementById('cpu-face').textContent = face('excited'); }
+    else { hint.textContent='どっちか\nあげるかも'; document.getElementById('cpu-face').textContent = face('thinking'); }
+    hint.classList.add('show');
+  } else if (level === 'mid') {
+    if (Math.random() < 0.55) {
+      const msgs = ['なんか考えてる','うーん…','あやしい表情','たくらんでる？'];
+      hint.textContent = msgs[Math.floor(Math.random()*msgs.length)];
+      hint.classList.add('show');
+    }
+  }
+}
+
+function showHintForCpuTurn() {
+  // CPUが親のとき：数字はわからんがCPUの親指のヒント
+  const hint = document.getElementById('hint');
+  const cpuUp = (cpuInternalL?1:0)+(cpuInternalR?1:0);
+  if (level === 'easy') {
+    if (cpuUp === 0) { hint.textContent='あまり\nあげなさそう'; }
+    else if (cpuUp === 2 && cL && cR) { hint.textContent='りょうて\nあげそう！'; }
+    else { hint.textContent='どっちか\nかな？'; }
+    hint.classList.add('show');
+  } else if (level === 'mid') {
+    if (Math.random() < 0.5) {
+      const msgs = ['なんか考えてる','…','もじもじしてる','自信ありそう'];
+      hint.textContent = msgs[Math.floor(Math.random()*msgs.length)];
+      hint.classList.add('show');
+    }
+  }
+}
+
+// ===== 数字ピッカー =====
+function buildNumPicker(max) {
+  const picker = document.getElementById('num-picker');
+  picker.innerHTML = '';
+  for (let i=0; i<=max; i++) {
+    const btn = document.createElement('button');
+    btn.className = 'num-btn';
+    btn.textContent = i;
+    btn.onclick = () => selectNum(i, btn);
+    picker.appendChild(btn);
+  }
+}
+
+function selectNum(n, btn) {
+  if (isAnimating) return;
+  selectedNum = n;
+  document.querySelectorAll('.num-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  document.getElementById('action-btn').disabled = false;
+}
+
+// ===== プレイヤーが親指トグル =====
+function toggleP(side) {
+  if (isAnimating) return;
+  if (side==='L') { if(!pL) return; pThL=!pThL; }
+  else            { if(!pR) return; pThR=!pThR; }
+  renderPlayerHands();
+}
+
+// ===== メインアクション =====
+function doAction() {
+  if (isAnimating) return;
+  if (currentParent === 'player') {
+    if (selectedNum === null) return;
+    doPlayerParent();
+  } else {
+    doCpuParent();
+  }
+}
+
+// プレイヤーが親のとき「いっせーのー！」
+function doPlayerParent() {
+  isAnimating = true;
+  document.getElementById('action-btn').disabled = true;
+  document.getElementById('num-picker').style.display = 'none';
+
+  // プレイヤーの選んだ数字を表示
+  const cn = document.getElementById('call-num');
+  cn.textContent = selectedNum;
+  cn.className = 'call-number revealed';
+
+  // CPUの親指を公開
+  cThL = cpuInternalL;
+  cThR = cpuInternalR;
+  showCpuThumb('L', cThL);
+  showCpuThumb('R', cThR);
+
+  // 合計計算
+  const total = (pThL?1:0)+(pThR?1:0)+(cThL?1:0)+(cThR?1:0);
+  const hit = (selectedNum === total);
+
+  document.getElementById('total-txt').textContent = `おやゆびのごうけい：${total}ほん`;
+
+  if (hit) {
+    cn.classList.add('hit');
+    document.getElementById('cpu-face').textContent = face('worried');
+  } else {
+    document.getElementById('cpu-face').textContent = face('happy');
+  }
+
+  setTimeout(() => resolveRound(hit, 'player', total), 1300);
+}
+
+// CPUが親のとき「おやゆびをきめる！」
+function doCpuParent() {
+  isAnimating = true;
+  document.getElementById('action-btn').disabled = true;
+
+  // プレイヤーは親指を決めた状態でボタンを押す
+  // CPU思考中演出
+  document.getElementById('thinking').classList.add('show');
+  document.getElementById('cpu-face').textContent = face('thinking');
+
+  const thinkTime = level==='easy' ? 1200 : level==='mid' ? 900 : 600;
+
+  setTimeout(() => {
+    document.getElementById('thinking').classList.remove('show');
+
+    // CPUの数字を一気に公開
+    const cn = document.getElementById('call-num');
+    cn.textContent = cpuDecidedNum;
+    cn.className = 'call-number revealed';
+
+    // CPUの親指を公開
+    cThL = cpuInternalL;
+    cThR = cpuInternalR;
+    showCpuThumb('L', cThL);
+    showCpuThumb('R', cThR);
+
+    const total = (pThL?1:0)+(pThR?1:0)+(cThL?1:0)+(cThR?1:0);
+    const hit = (cpuDecidedNum === total);
+
+    document.getElementById('total-txt').textContent = `おやゆびのごうけい：${total}ほん`;
+
+    if (hit) {
+      cn.classList.add('hit');
+      document.getElementById('cpu-face').textContent = face('excited');
+    } else {
+      document.getElementById('cpu-face').textContent = face('worried');
+    }
+
+    setTimeout(() => resolveRound(hit, 'cpu', total), 1300);
+  }, thinkTime);
+}
+
+// ===== 判定 =====
+function resolveRound(hit, parent, total) {
+  if (hit) {
+    // 親が当てた → 親が手を引っ込める
+    if (parent === 'player') withdrawPlayer();
+    else withdrawCpu();
+
+    // 勝利判定
+    setTimeout(() => {
+      if (!pL && !pR) { showResult(true); return; }
+      if (!cL && !cR) { showResult(false); return; }
+      // まだ続く → 親は変わらない（もう一度チャンス）→ いや、当たったら親は変わらずもう一枚狙える
+      // ルール確認：当たったら手を引っ込めてまた同じ親？→ 次の親へ
+      currentParent = currentParent === 'player' ? 'cpu' : 'player';
+      setupTurn();
+    }, 600);
+  } else {
+    // 外れた → 親を交代
+    setTimeout(() => {
+      currentParent = currentParent === 'player' ? 'cpu' : 'player';
+      setupTurn();
+    }, 600);
+  }
+}
+
+function withdrawPlayer() {
+  if (pL && pR) {
+    // どちらか引っ込める（今上げてた手を引っ込めるのが自然、なければランダム）
+    if (pThL && pL) { pL = false; }
+    else if (pThR && pR) { pR = false; }
+    else if (pL) { pL = false; }
+    else { pR = false; }
+  } else if (pL) { pL = false; }
+  else if (pR) { pR = false; }
+  renderPlayerHands();
+}
+
+function withdrawCpu() {
+  if (cL && cR) {
+    if (cThL && cL) { cL = false; }
+    else if (cThR && cR) { cR = false; }
+    else if (cL) { cL = false; }
+    else { cR = false; }
+  } else if (cL) { cL = false; }
+  else if (cR) { cR = false; }
+  renderCpuHands();
+}
+
+// ===== 結果 =====
+function showResult(playerWin) {
+  const ov = document.getElementById('overlay');
+  document.getElementById('r-emoji').textContent = playerWin ? '🏆' : '😢';
+  document.getElementById('r-title').textContent = playerWin ? 'やったー！' : 'まけちゃった';
+  document.getElementById('r-title').style.color = playerWin ? '#4ade80' : '#f87171';
+  document.getElementById('r-sub').textContent = playerWin ? 'てきにかったよ！すごい！' : 'もういっかいがんばれ！';
+  document.getElementById('r-retry').onclick = () => {
+    ov.classList.remove('show');
+    startGame(level);
+  };
+  ov.classList.add('show');
+  if (playerWin) spawnConfetti();
+}
+
+// ===== UI描画 =====
+function renderAll() {
+  renderPlayerHands();
+  renderCpuHands();
+  updateHandStatus();
+}
+
+function renderPlayerHands() {
+  const btnL = document.getElementById('ph-L');
+  const btnR = document.getElementById('ph-R');
+  btnL.className = 'p-hand-btn' + (!pL?' out':pThL?' up':'');
+  btnR.className = 'p-hand-btn' + (!pR?' out':pThR?' up':'');
+}
+
+function renderCpuHands() {
+  const hL = document.getElementById('chl');
+  const hR = document.getElementById('chr');
+  hL.className = 'cpu-hand' + (!cL?' out':'');
+  hR.className = 'cpu-hand' + (!cR?' out':'');
+}
+
+function showCpuThumb(side, up) {
+  document.getElementById('cth-'+side).className = 'cpu-thumbup' + (up?' show':'');
+}
+
+function updateHandStatus() {
+  const pHands = (pL?'✊':'　') + (pR?'✊':'　');
+  const cHands = (cL?'✊':'　') + (cR?'✊':'　');
+  document.getElementById('hand-status').textContent = `き:${pHands} て:${cHands}`;
+}
+
+function activeCount(...bools) {
+  return bools.filter(Boolean).length;
+}
+
+// ===== 画面切替 =====
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function goTitle() {
+  document.getElementById('overlay').classList.remove('show');
+  showScreen('title');
+}
+
+// ===== 紙吹雪 =====
+function spawnConfetti() {
+  const colors = ['#f5a623','#4ecdc4','#e94560','#a855f7','#45b7d1'];
+  for (let i=0; i<50; i++) {
+    const el = document.createElement('div');
+    const size = 6 + Math.random()*8;
+    el.style.cssText = `
+      position:fixed; pointer-events:none;
+      width:${size}px; height:${size}px;
+      background:${colors[Math.floor(Math.random()*colors.length)]};
+      border-radius:${Math.random()<0.5?'50%':'3px'};
+      left:${Math.random()*100}vw; top:-20px;
+      animation: cf ${1.5+Math.random()*2}s ease-in ${Math.random()*0.8}s forwards;
+      z-index:200;
+    `;
+    document.body.appendChild(el);
+    setTimeout(()=>el.remove(), 4000);
+  }
+}
+const sty = document.createElement('style');
+sty.textContent = `@keyframes cf { 0%{transform:translateY(0) rotate(0);opacity:1} 100%{transform:translateY(110vh) rotate(720deg);opacity:0} }`;
+document.head.appendChild(sty);
+</script>
+</body>
+</html>
